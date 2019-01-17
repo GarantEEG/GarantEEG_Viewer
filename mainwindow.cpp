@@ -3,10 +3,25 @@
 
 #include <QDebug>
 
+MainWindow *g_MainWindow = nullptr;
+
 MainWindow::MainWindow(QWidget *parent)
 : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    g_MainWindow = this;
+
+    qRegisterMetaType<GarantEEG::GARANT_EEG_DATA>("GarantEEG::GARANT_EEG_DATA");
+
+    connect(this, &MainWindow::UpdateEegData, this, &MainWindow::OnUpdateEegData);
+
+    ui->gv_Graphics->setChart(new QChart());
+    ui->gv_Graphics->setRubberBand(QChartView::VerticalRubberBand);
+
+    QChart *chart = (QChart*)ui->gv_Graphics->chart();
+    chart->setAnimationOptions(QChart::NoAnimation);
+    chart->setTitle("EEG");
 
     m_Eeg = GarantEEG::CreateDevice(GarantEEG::DT_GARANT);
 
@@ -25,6 +40,9 @@ MainWindow::MainWindow(QWidget *parent)
         m_Eeg->SetCallback_ReceivedData([](const GarantEEG::GARANT_EEG_DATA *eegData)
         {
             qDebug() << "ReceivedData";
+
+            if (g_MainWindow != nullptr)
+                emit g_MainWindow->UpdateEegData(*eegData);
         });
     }
 }
@@ -153,4 +171,47 @@ void MainWindow::on_pb_RecordResume_clicked()
     m_Eeg->ResumeRecord();
     ui->pb_RecordPause->setEnabled(true);
     ui->pb_RecordResume->setEnabled(false);
+}
+
+void MainWindow::OnUpdateEegData(GarantEEG::GARANT_EEG_DATA eegData)
+{
+    QChart *chart = (QChart*)ui->gv_Graphics->chart();
+
+    if (chart == nullptr)
+        return;
+
+    chart->removeAllSeries();
+
+    m_AxisX = new QValueAxis();
+    m_AxisX->setLabelFormat("%.01f");
+    m_AxisX->setTitleText("Time, sec");
+    chart->addAxis(m_AxisX, Qt::AlignBottom);
+
+    m_AxisY = new QValueAxis();
+    m_AxisY->setLabelFormat("%i");
+    m_AxisY->setTitleText("Value, uV");
+    chart->addAxis(m_AxisY, Qt::AlignLeft);
+
+    QLineSeries *lineSeries = new QLineSeries();
+    lineSeries->setName("C1");
+
+    double maxRange = 0.0;
+    static double time = 0.0;
+
+    for (int i = 0; i < eegData.DataRecordsCount; i++)
+    {
+        double value = eegData.ChannelsData[i].Value[0];
+
+        maxRange = std::max(maxRange, value);
+        lineSeries->append(time, value);
+
+        time += 0.1;
+    }
+
+    chart->addSeries(lineSeries);
+
+    lineSeries->attachAxis(m_AxisX);
+    lineSeries->attachAxis(m_AxisY);
+
+    m_AxisY->setMax(maxRange);
 }
