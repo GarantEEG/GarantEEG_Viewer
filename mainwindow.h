@@ -51,15 +51,25 @@ private slots:
 
     void OnUpdateEegData(GarantEEG::GARANT_EEG_DATA eegData);
 
+    void on_cb_AutoReconnection_stateChanged(int arg1);
+
+    void on_pb_PowerOff_clicked();
+
+    void on_pb_IndicationStart_clicked();
+
+    void on_pb_IndicationStop_clicked();
+
 private:
     Ui::MainWindow *ui;
 
     GarantEEG::IGarantEEG *m_Eeg = nullptr;
 
+    int m_DisplaySeconds = 60;
+
     QValueAxis *m_AxisX = nullptr;
     QValueAxis *m_AxisY = nullptr;
 
-    QLineSeries *m_LineSeries = nullptr;
+    QLineSeries *m_LineSeries[8] = { nullptr };
 };
 
 #endif // MAINWINDOW_H
