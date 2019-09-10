@@ -4,10 +4,132 @@
 #include <QMessageBox>
 #include <QDebug>
 
+#include <include/../src/Filtering/ButterworthFilter.hpp>
+
+
+void ParseEegFile()
+{
+    int cl[8] = {1,2,3,4,5,6,7,8};
+    GarantEEG::CBaseFilter *filter = GarantEEG::CButterworthFilter<1, 8>::Create(4, &cl[0]);
+
+    if (filter == nullptr)
+        return;
+
+    filter->Setup(500, 1, 45);
+
+    QFile f("D:/EEG8_Viewer/Cheng_Yong_eeg_0.bdf.csv");
+    QFile f2("D:/EEG8_Viewer/Cheng_Yong_eeg_0_50hz.bdf.csv");
+
+    if (!f2.open(QIODevice::WriteOnly))
+        return;
+
+    QVector<float> channels[8];
+
+    Dsp::SimpleFilter<Dsp::Butterworth::BandPass<4>, 8> btwFilter;
+
+    double centerFrequency = ((1 + (45 - 1)) / 2.0);
+    double widthFrequency = ((45 - 1) / 2.0);
+
+    btwFilter.setup(4, 500, centerFrequency, widthFrequency);
+
+    if (f.open(QIODevice::ReadOnly))
+    {
+        //Header
+        f2.write(f.readLine());
+
+        for (int i = 0; i < 8; i++)
+            channels[i].reserve(500);
+
+        while (!f.atEnd())
+        {
+            QStringList list = QString(f.readLine()).split(";", QString::SkipEmptyParts);
+
+            if (list.size() < 8)
+                continue;
+
+            for (int i = 0; i < 8; i++)
+                channels[i].push_back(list[i].toFloat() * 1000000.0);
+
+            if (channels[0].size() >= 500)
+            {
+                float *tablePtr[8] =
+                {
+                    &channels[0][0],
+                    &channels[1][0],
+                    &channels[2][0],
+                    &channels[3][0],
+                    &channels[4][0],
+                    &channels[5][0],
+                    &channels[6][0],
+                    &channels[7][0]
+                };
+
+                btwFilter.process(500, &tablePtr[0]);
+                //filter->Process(500, &tablePtr[0]);
+
+                for (int i = 0; i < 500; i++)
+                {
+                    QByteArray arr;
+                    for (int j = 0; j < 8; j++)
+                    {
+                        arr.push_back(QByteArray::number(channels[j][i], 'g', 10).replace('.', ','));
+                        if (j < 7)
+                            arr.push_back(';');
+                    }
+                    arr.push_back("\r\n");
+                    f2.write(arr);
+                }
+                f2.flush();
+
+                for (int i = 0; i < 8; i++)
+                {
+                    channels[i].clear();
+                    channels[i].reserve(500);
+                }
+            }
+        }
+
+        f.close();
+    }
+
+    qDebug() << "channels[0].size()" << channels[0].size();
+
+    /*float *tablePtr[8] =
+    {
+        &channels[0][0],
+        &channels[1][0],
+        &channels[2][0],
+        &channels[3][0],
+        &channels[4][0],
+        &channels[5][0],
+        &channels[6][0],
+        &channels[7][0]
+    };
+
+    filter->Process(channels[0].size(), &tablePtr[0]);
+
+    for (int i = 0; i < channels[0].size(); i++)
+    {
+        QByteArray arr;
+        for (int j = 0; j < 8; j++)
+        {
+            arr.push_back(QByteArray::number(channels[j][i], 'g', 10).replace('.', ','));
+            if (j < 7)
+                arr.push_back(';');
+        }
+        arr.push_back("\r\n");
+        f2.write(arr);
+    }*/
+
+    f2.close();
+}
+
 MainWindow::MainWindow(QWidget *parent)
 : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    //ParseEegFile();
 
     qRegisterMetaType<GarantEEG::GARANT_EEG_DATA>("GarantEEG::GARANT_EEG_DATA");
 
@@ -73,7 +195,7 @@ MainWindow::MainWindow(QWidget *parent)
         });
     }
 
-    QFile bf("tmp.bat");
+    /*QFile bf("tmp.bat");
 
     if (bf.open(QIODevice::WriteOnly | QIODevice::Text))
     {
@@ -91,7 +213,7 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     QFile::remove("tmp.bat");
-    QFile::remove("temp_wlan_info.txt");
+    QFile::remove("temp_wlan_info.txt");*/
 }
 
 MainWindow::~MainWindow()
@@ -293,7 +415,8 @@ void MainWindow::OnUpdateEegData(GarantEEG::GARANT_EEG_DATA eegData)
         for (int j = 0; j < eegData.DataRecordsCount; j++)
         {
             //double value = eegData.ChannelsData[j].Value[i] + ((i - 4.0) * 1.0);
-            double value = eegData.ChannelsData[j].Value[i] + ((i - 4) * 0.001);
+            //double value = eegData.ChannelsData[j].Value[i] + ((i - 4) * 0.001);
+            double value = eegData.ChannelsData[j].Value[i];
 
             points[position] = QPointF(position, value);
             position++;

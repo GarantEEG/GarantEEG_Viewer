@@ -64,7 +64,7 @@ private:
 
     GarantEEG::IGarantEEG *m_Eeg = nullptr;
 
-    int m_DisplaySeconds = 60;
+    int m_DisplaySeconds = 10;
 
     QValueAxis *m_AxisX = nullptr;
     QValueAxis *m_AxisY = nullptr;
