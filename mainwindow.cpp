@@ -414,9 +414,9 @@ void MainWindow::OnUpdateEegData(GarantEEG::GARANT_EEG_DATA eegData)
 
         for (int j = 0; j < eegData.DataRecordsCount; j++)
         {
-            //double value = eegData.ChannelsData[j].Value[i] + ((i - 4.0) * 1.0);
-            //double value = eegData.ChannelsData[j].Value[i] + ((i - 4) * 0.001);
-            double value = eegData.ChannelsData[j].Value[i];
+            //double value = eegData.RawChannelsData[j].Value[i] + ((i - 4.0) * 1.0);
+            //double value = eegData.RawChannelsData[j].Value[i] + ((i - 4) * 0.001);
+            double value = eegData.RawChannelsData[j].Value[i];
 
             points[position] = QPointF(position, value);
             position++;
