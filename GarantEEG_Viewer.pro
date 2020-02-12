@@ -21,16 +21,49 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 CONFIG += c++11
+CONFIG += c++14
+CONFIG += qwt
+
+INCLUDEPATH += \
+    $$PWD/qwt/include
+
+CONFIG(debug, debug|release) {
+    LIBS += \
+        -L$$PWD/qwt/lib
+
+        LIBS += \
+                -lqwtd
+}
+
+CONFIG(release, debug|release) {
+    LIBS += \
+        -L$$PWD/qwt/lib
+
+        LIBS += \
+                -lqwt
+}
+
+QT += \
+    printsupport
+
+DEFINES += \
+    QWT_DLL
 
 include("$$PWD/../GarantEEG_API/GarantEEG_API.pri")
 
 INCLUDEPATH += $$PWD/../GarantEEG_API/
 
 SOURCES += \
+        chart.cpp \
+        curve.cpp \
+        curve_data.cpp \
         main.cpp \
         mainwindow.cpp
 
 HEADERS += \
+        chart.h \
+        curve.h \
+        curve_data.h \
         mainwindow.h
 
 FORMS += \

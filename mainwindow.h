@@ -17,6 +17,8 @@
 #include <QtCharts/QPolarChart>
 QT_CHARTS_USE_NAMESPACE
 
+#include <QTimer>
+
 namespace Ui {
 class MainWindow;
 }
@@ -66,10 +68,6 @@ private:
 
     int m_DisplaySeconds = 10;
 
-    QValueAxis *m_AxisX = nullptr;
-    QValueAxis *m_AxisY = nullptr;
-
-    QLineSeries *m_LineSeries[8] = { nullptr };
 };
 
 #endif // MAINWINDOW_H
