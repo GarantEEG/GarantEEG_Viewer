@@ -13,11 +13,13 @@ public:
 public:
     void appendPoint(double x, double y);
     void appendValue(double inc, double value);
+    void setMaxPoints( int count );
     void clear();
     void clear(double left);
     bool isGoingToLeft(double x) const;
     double left() const;
     double right() const;
+    int getCurrentPos() const;
 
 private:
     CurveData *_data;

@@ -1,7 +1,11 @@
 #include "chart.h"
 #include <qwt_plot_canvas.h>
 #include <qwt_plot_layout.h>
-#include <QJsonArray>
+#include <QGridLayout>
+#include <QLabel>
+#include <QMessageBox>
+#include <QMenu>
+#include <QThread>
 
 namespace
 {
@@ -62,7 +66,34 @@ Chart::Chart(QWidget *parent)
     canvas->setPalette(Qt::white);
     canvas->setBorderRadius(10.0);
 
+    _mark.setValue(0.0, 0.0);
+    _mark.setLineStyle(QwtPlotMarker::VLine);
+    _mark.setLabelAlignment(Qt::AlignRight | Qt::AlignBottom);
+    _mark.setLinePen(QPen(Qt::green, 4, Qt::SolidLine));
+    _mark.attach(this);
+
     insertLegend(&_legend, QwtPlot::BottomLegend);
+
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect( this, &Chart::customContextMenuRequested, this, &Chart::customMenuRequested );
+    connect( &m_myContext, &CSimpleContext::onNewDataSet, this, &Chart::setFixedBorder );
+
+    //connect( &m_myContext, &CSimpleContext::rejected, this, [this]{dialogRelease = true; qDebug()<<"1"; } );
+    //connect( &m_myContext, &CSimpleContext::finished, this, [this]{dialogRelease = true; qDebug()<<"2"; }  );
+    //connect( &m_myContext, &CSimpleContext::accepted, this, [this]{dialogRelease = true; qDebug()<<"3"; } );
+}
+
+void Chart::customMenuRequested()
+{
+    QMenu *menu = new QMenu(this);
+
+    QAction *pCheckAct = menu->addAction("Autoscale",this,[this]{ m_autoscale = !m_autoscale;
+                                                                if (!m_autoscale){m_myContext.onOffAutoScale();} else{ setAxisAutoScale(QwtPlot::yLeft, true); } });
+    pCheckAct->setCheckable(true);
+    pCheckAct->setChecked(m_autoscale);
+
+    //menu->addAction("Set border", this, [this]{m_myContext.move(QCursor::pos()); execDialog = m_myContext.open(); qDebug()<<"ex diag"<<execDialog; });
+    //menu->popup(QCursor::pos ());
 }
 
 void Chart::appendCurve(QString const &key, QString const &title, QColor const &color)
@@ -71,7 +102,10 @@ void Chart::appendCurve(QString const &key, QString const &title, QColor const &
     curve->setPen(QColor{color}, 2.0);
     curve->setTitle(toQwtText(title));
     curve->attach(this);
+    curve->setMaxPoints(floor(_maxSeconds*_frameRate));
     _curves.emplace(key, std::move(curve));
+
+    _mark.setVisible(_curves.size()==1);
 }
 
 void Chart::setCurveColor(const QString &title, const QColor &color)
@@ -86,7 +120,7 @@ void Chart::setCurveColor(const QString &title, const QColor &color)
 	}
 }
 
-void Chart::appendPoints(QString const &key, QJsonArray const &x, QJsonArray const &y)
+void Chart::appendPoints(QString const &key, std::vector<double> const &x, std::vector<double> const &y)
 {
     if (x.empty())
         return;
@@ -95,17 +129,22 @@ void Chart::appendPoints(QString const &key, QJsonArray const &x, QJsonArray con
     if (it == _curves.end())
         return;
 
-    if (it->second->isGoingToLeft(x.first().toDouble()))
-        it->second->clear();
+//    if (it->second->isGoingToLeft(x[0]))
+//        it->second->clear();
 
     for (int i = 0; i < x.size(); ++i)
-        it->second->appendPoint(x[i].toDouble() / 1000.0, y[i].toDouble());
+        it->second->appendPoint(x[i]/ 1000.0, y[i]);
+
+    if( _curves.size()==1 )
+    {
+        _mark.setValue(it->second->getCurrentPos(), 0.0);
+    }
 
     fit();
     replot();
 }
 
-void Chart::appendValues(QString const &key, double inc, const QList<double> &values)
+void Chart::appendValues(QString const &key, double inc, std::vector<double> const &values)
 {
     auto it = _curves.find(key);
     if (it == _curves.end())
@@ -118,12 +157,23 @@ void Chart::appendValues(QString const &key, double inc, const QList<double> &va
     replot();
 }
 
-void Chart::setMaxSeconds(double seconds)
+void Chart::setMaxSeconds(double seconds, double frameRate)
 {
     Q_ASSERT(seconds > 0.0);
-    _curves.clear();
+    Q_ASSERT(frameRate > 0.0);
+
     _maxSeconds = seconds;
-    setAxisScale(xBottom, 0.0, _maxSeconds);
+    _frameRate = frameRate;
+    setAxisScale(xBottom, 0.0, _maxSeconds*_frameRate);
+
+    if (execDialog){
+        dialogRelease = false;
+        m_myContext.done(0);
+
+        while( !dialogRelease ){
+            QThread::msleep(1);
+        }
+    }
 }
 
 void Chart::fit()
@@ -145,12 +195,69 @@ void Chart::fit()
             max = it->second->right();
     }
 
-    min = std::floor(max / _maxSeconds) * _maxSeconds;
-    max = min + _maxSeconds;
-
-    if (max - min <= _maxSeconds)
-        for (auto &curve : _curves)
-            curve.second->clear(min);
-
     setAxisScale(xBottom, min, max);
+}
+
+void Chart::setFixedBorder(double min, double max)
+{
+    Q_ASSERT(min<max);
+    m_autoscale = false;
+    setAxisScale(yLeft, min, max);
+}
+
+Chart::~Chart()
+{
+    m_myContext.clearFocus();
+    m_myContext.done(0);
+    m_myContext.accept();
+    m_myContext.close();
+}
+
+void Chart::setOffDialog()
+{
+    qDebug()<<"exec dial value"<<execDialog;
+    //dialogRelease = false;
+    m_myContext.done(0);
+
+    /*while( !dialogRelease ){
+        QThread::msleep(1);
+    }*/
+}
+
+//
+CSimpleContext::CSimpleContext():QDialog{}
+{
+    auto mainLayout = new QGridLayout{this};
+
+    mainLayout->addWidget(new QLabel("minBord"), 0,1,1,1);
+    mainLayout->addWidget(new QLabel("maxBord"), 0,2,1,1);
+    mainLayout->addWidget(&m_minBord, 1,1,1,1);
+    mainLayout->addWidget(&m_maxBord, 1,2,1,1);
+    mainLayout->addWidget(&m_setButton, 2,1,1,2);
+
+    m_minBord.setMinimum(-1e9);
+    m_minBord.setMaximum(1e9);
+
+    m_setButton.setText("set bord");
+
+    setVisible(false);
+    connect( &m_setButton, &QPushButton::clicked, this, &CSimpleContext::onSetButtonClick );
+
+    setWindowFlags(Qt ::WindowCloseButtonHint);
+}
+
+void CSimpleContext::onSetButtonClick()
+{
+    if (m_minBord.value()>m_maxBord.value())
+    {
+        QMessageBox::information( 0, "Ты тупой?", "min border>max border");
+        return;
+    }
+    setVisible(false);
+    emit onNewDataSet(m_minBord.value(), m_maxBord.value());
+}
+
+void CSimpleContext::onOffAutoScale()
+{
+    emit onNewDataSet(m_minBord.value(), m_maxBord.value());
 }

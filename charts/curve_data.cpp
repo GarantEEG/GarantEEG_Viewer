@@ -5,15 +5,21 @@ CurveData::CurveData()
     d_boundingRect = QRectF{};
 }
 
-void CurveData::appendPoint(double x, double y)
+void CurveData::setPointsCount( int count )
 {
-    _data.emplace_back(x, y);
-    updateBoundingRect(x, y);
+    _data.resize(count);
+    d_boundingRect.setRight(count);
 }
 
-void CurveData::appendValue(double inc, double value)
+void CurveData::appendValue(double value)
 {
-    appendPoint(d_boundingRect.right() + inc, value);
+    if (_data.empty())
+        return;
+
+    int potential_index = _currentIndex%_data.size();
+    _data[potential_index] = QPointF((double)potential_index,value);
+    updateBoundingRect(value);
+    _currentIndex++;
 }
 
 void CurveData::clear()
@@ -37,19 +43,11 @@ void CurveData::clear(double left)
 
     auto it = _data.cbegin();
 
-    double xMin = it->x();
-    double xMax = it->x();
     double yMin = it->y();
     double yMax = it->y();
 
     while (++it != _data.cend())
     {
-        if (it->x() < xMin)
-            xMin = it->x();
-
-        if (it->x() > xMax)
-            xMax = it->x();
-
         if (it->y() < yMin)
             yMin = it->y();
 
@@ -57,22 +55,14 @@ void CurveData::clear(double left)
             yMax = it->y();
     }
 
-    d_boundingRect.setRect(xMin, yMin, xMax - xMin, yMax - yMin);
+    d_boundingRect.setRect(0, yMin, _data.size(), yMax - yMin);
 }
 
-void CurveData::updateBoundingRect(double x, double y)
+void CurveData::updateBoundingRect(double value)
 {
-    if (d_boundingRect.x() == 0.0 || d_boundingRect.y() == 0.0)
-    {
-        d_boundingRect.setRect(x, y, 0.0, 0.0);
-        return;
-    }
+    if (value > d_boundingRect.bottom())
+        d_boundingRect.setBottom(value);
 
-    d_boundingRect.setRight(x);
-
-    if (y > d_boundingRect.bottom())
-        d_boundingRect.setBottom(y);
-
-    if (y < d_boundingRect.top())
-        d_boundingRect.setTop(y);
+    if (value < d_boundingRect.top())
+        d_boundingRect.setTop(value);
 }

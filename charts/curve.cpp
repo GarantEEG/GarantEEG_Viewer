@@ -2,8 +2,8 @@
 #include "curve_data.h"
 
 Curve::Curve()
-    : QwtPlotCurve()
-    , _data(new CurveData())
+    : QwtPlotCurve{}
+    , _data{new CurveData{}}
 {
     setStyle(QwtPlotCurve::Lines);
     setRenderHint(QwtPlotItem::RenderAntialiased, true);
@@ -13,12 +13,12 @@ Curve::Curve()
 
 void Curve::appendPoint(double x, double y)
 {
-    _data->appendPoint(x, y);
+    _data->appendValue(y);
 }
 
 void Curve::appendValue(double inc, double value)
 {
-    _data->appendValue(inc, value);
+    _data->appendValue(value);
 }
 
 void Curve::clear()
@@ -44,4 +44,14 @@ double Curve::left() const
 double Curve::right() const
 {
     return _data->boundingRect().right();
+}
+
+void Curve::setMaxPoints( int count )
+{
+    _data->setPointsCount(count);
+}
+
+int Curve::getCurrentPos() const
+{
+    return _data->getCurrentPos();
 }

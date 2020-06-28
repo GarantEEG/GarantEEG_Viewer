@@ -65,7 +65,7 @@ MainWindow::MainWindow(QWidget *parent)
         });
     }
 
-    ui->qwt_Chart->setMaxSeconds(m_DisplaySeconds);
+	ui->qwt_Chart->setMaxSeconds(m_DisplaySeconds, 500);
 	ui->qwt_Chart->appendCurve("EEG1", "Po7", Qt::red);
 	ui->qwt_Chart->appendCurve("EEG2", "O1", Qt::black);
 	ui->qwt_Chart->appendCurve("EEG3", "Oz", Qt::darkGray);
@@ -251,8 +251,8 @@ void MainWindow::OnUpdateEegData(GarantEEG::GARANT_EEG_DATA eegData)
 
         for (int i = 0; i < 8; i++)
         {
-            QJsonArray x;
-            QJsonArray y;
+			std::vector<double> x;
+			std::vector<double> y;
             //QList<double> dataList;
 
             for (int j = 0; j < eegData.DataRecordsCount; j++)
@@ -261,8 +261,8 @@ void MainWindow::OnUpdateEegData(GarantEEG::GARANT_EEG_DATA eegData)
                 //double value = eegData.RawChannelsData[j].Value[i] + ((i - 4) * 0.001);
                 double value = eegData.RawChannelsData[j].Value[i];
 
-                x.append(QJsonValue(eegData.Time + (j * timeStep)));
-                y.append(QJsonValue(value));
+				x.push_back(eegData.Time + (j * timeStep));
+				y.push_back(value);
                 //dataList << value;
             }
 

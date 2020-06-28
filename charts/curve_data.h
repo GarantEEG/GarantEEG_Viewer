@@ -11,19 +11,21 @@ public:
 
 public:
     QPointF sample(size_t i) const override { return _data[i]; }
-    size_t size() const override { return _data.size(); }
+    size_t size() const override { return _currentIndex<_data.size()? _currentIndex: _data.size(); }
     QRectF boundingRect() const override { return d_boundingRect; }
+    void setPointsCount( int count );
+    const int getCurrentPos() const{ return _data.size()!=0 ? _currentIndex%_data.size() : _currentIndex; }
 
 public:
-    void appendPoint(double x, double y);
-    void appendValue(double inc, double value);
+    void appendValue(double value);
     void clear();
     void clear(double left);
 
 private:
-    void updateBoundingRect(double x, double y);
+    void updateBoundingRect(double value);
 
 private:
+    int _currentIndex{0};
     std::vector<QPointF> _data;
 };
 
