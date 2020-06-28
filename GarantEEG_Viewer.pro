@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui widgets charts
+QT       += core gui widgets
 
 TARGET = GarantEEG_Viewer
 TEMPLATE = app
@@ -54,20 +54,26 @@ include("$$PWD/../GarantEEG_API/GarantEEG_API.pri")
 INCLUDEPATH += $$PWD/../GarantEEG_API/
 
 SOURCES += \
-        chart.cpp \
-        curve.cpp \
-        curve_data.cpp \
+		charts/chart.cpp \
+		charts/curve.cpp \
+		charts/curve_data.cpp \
+	forms/impedanceform.cpp \
+	forms/settingsform.cpp \
         main.cpp \
-        mainwindow.cpp
+		forms/mainwindow.cpp
 
 HEADERS += \
-        chart.h \
-        curve.h \
-        curve_data.h \
-        mainwindow.h
+		charts/chart.h \
+		charts/curve.h \
+		charts/curve_data.h \
+		forms/impedanceform.h \
+		forms/mainwindow.h \
+		forms/settingsform.h
 
 FORMS += \
-        mainwindow.ui
+		forms/impedanceform.ui \
+		forms/mainwindow.ui \
+		forms/settingsform.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

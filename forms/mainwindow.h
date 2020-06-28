@@ -2,25 +2,16 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTimer>
+#include <QCloseEvent>
+
 #include <include/GarantEEG_API_CPP.h>
 
-#include <QtCharts/QLineSeries>
-#include <QtCharts/QPieSeries>
-#include <QtCharts/QStackedBarSeries>
-#include <QtCharts/QBarSet>
-#include <QtCharts/QSplineSeries>
-#include <QtCharts/QScatterSeries>
-#include <QtCharts/QDateTimeAxis>
-#include <QtCharts/QValueAxis>
-#include <QtCharts/QChartView>
-#include <QtCharts/QChart>
-#include <QtCharts/QPolarChart>
-QT_CHARTS_USE_NAMESPACE
+#include "forms/impedanceform.h"
 
-#include <QTimer>
-
-namespace Ui {
-class MainWindow;
+namespace Ui
+{
+	class MainWindow;
 }
 
 class MainWindow : public QMainWindow
@@ -30,6 +21,9 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+protected:
+	virtual void closeEvent(QCloseEvent *e) override;
 
 Q_SIGNALS:
     void UpdateEegData(GarantEEG::GARANT_EEG_DATA);
@@ -55,11 +49,9 @@ private slots:
 
     void on_cb_AutoReconnection_stateChanged(int arg1);
 
-    void on_pb_PowerOff_clicked();
+	void on_pb_Settings_clicked();
 
-    void on_pb_IndicationStart_clicked();
-
-    void on_pb_IndicationStop_clicked();
+	void on_pb_CheckImpedance_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -67,6 +59,8 @@ private:
     GarantEEG::IGarantEEG *m_Eeg = nullptr;
 
     int m_DisplaySeconds = 10;
+
+	ImpedanceForm *m_ImpedanceForm = nullptr;
 
 };
 

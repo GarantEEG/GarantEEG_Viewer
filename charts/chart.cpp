@@ -74,6 +74,18 @@ void Chart::appendCurve(QString const &key, QString const &title, QColor const &
     _curves.emplace(key, std::move(curve));
 }
 
+void Chart::setCurveColor(const QString &title, const QColor &color)
+{
+	for (auto it = _curves.begin(); it != _curves.end(); ++it)
+	{
+		if (it->second->title().text() == title)
+		{
+			it->second->setPen(color, 2.0);
+			break;
+		}
+	}
+}
+
 void Chart::appendPoints(QString const &key, QJsonArray const &x, QJsonArray const &y)
 {
     if (x.empty())

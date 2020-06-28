@@ -1,9 +1,35 @@
-#include "mainwindow.h"
-#include "ui_mainwindow.h"
 
 #include <QMessageBox>
 #include <QJsonArray>
 #include <QDebug>
+
+#include "forms/mainwindow.h"
+#include "ui_mainwindow.h"
+#include "forms/settingsform.h"
+
+namespace GarantUtility
+{
+void BringWidgetToTop(QWidget *widget)
+{
+	if (widget != nullptr)
+	{
+		if (widget->isMinimized())
+		{
+			if (widget->isMaximized())
+				widget->showMaximized();
+			else
+				widget->showNormal();
+		}
+		else if (widget->isVisible())
+			widget->activateWindow();
+		else
+		{
+			widget->show();
+			widget->activateWindow();
+		}
+	}
+}
+} //GarantUtility
 
 MainWindow::MainWindow(QWidget *parent)
 : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -40,19 +66,33 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     ui->qwt_Chart->setMaxSeconds(m_DisplaySeconds);
-    ui->qwt_Chart->appendCurve("EEG1", "EEG1", Qt::red);
-    ui->qwt_Chart->appendCurve("EEG2", "EEG2", Qt::black);
-    ui->qwt_Chart->appendCurve("EEG3", "EEG3", Qt::darkGray);
-    ui->qwt_Chart->appendCurve("EEG4", "EEG4", Qt::green);
-    ui->qwt_Chart->appendCurve("EEG5", "EEG5", Qt::blue);
-    ui->qwt_Chart->appendCurve("EEG6", "EEG6", Qt::magenta);
-    ui->qwt_Chart->appendCurve("EEG7", "EEG7", Qt::yellow);
-    ui->qwt_Chart->appendCurve("EEG8", "EEG8", Qt::darkYellow);
+	ui->qwt_Chart->appendCurve("EEG1", "Po7", Qt::red);
+	ui->qwt_Chart->appendCurve("EEG2", "O1", Qt::black);
+	ui->qwt_Chart->appendCurve("EEG3", "Oz", Qt::darkGray);
+	ui->qwt_Chart->appendCurve("EEG4", "P3", Qt::green);
+	ui->qwt_Chart->appendCurve("EEG5", "Pz", Qt::blue);
+	ui->qwt_Chart->appendCurve("EEG6", "P4", Qt::magenta);
+	ui->qwt_Chart->appendCurve("EEG7", "O2", Qt::yellow);
+	ui->qwt_Chart->appendCurve("EEG8", "Po8", Qt::darkYellow);
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::closeEvent(QCloseEvent *e)
+{
+	if (m_ImpedanceForm != nullptr)
+	{
+		disconnect(this, &MainWindow::UpdateEegData, m_ImpedanceForm, &ImpedanceForm::OnUpdateEegData);
+
+		delete m_ImpedanceForm;
+		m_ImpedanceForm = nullptr;
+	}
+
+	QApplication::closeAllWindows();
+	e->accept();
 }
 
 void MainWindow::on_pb_Start_clicked()
@@ -77,10 +117,7 @@ void MainWindow::on_pb_Start_clicked()
          ui->pb_RecordPause->setEnabled(false);
          ui->pb_RecordResume->setEnabled(false);
 
-         ui->sb_IndicationValue->setEnabled(true);
-         ui->pb_IndicationStart->setEnabled(true);
-         ui->pb_IndicationStop->setEnabled(false);
-         ui->pb_PowerOff->setEnabled(true);
+		 ui->pb_CheckImpedance->setEnabled(true);
      }
 }
 
@@ -106,10 +143,10 @@ void MainWindow::on_pb_Stop_clicked()
     ui->pb_RecordPause->setEnabled(false);
     ui->pb_RecordResume->setEnabled(false);
 
-    ui->sb_IndicationValue->setEnabled(false);
-    ui->pb_IndicationStart->setEnabled(false);
-    ui->pb_IndicationStop->setEnabled(false);
-    ui->pb_PowerOff->setEnabled(false);
+	ui->pb_CheckImpedance->setEnabled(false);
+
+	if (m_ImpedanceForm != nullptr && m_ImpedanceForm->isVisible())
+		m_ImpedanceForm->hide();
 }
 
 void MainWindow::on_pb_PauseStream_clicked()
@@ -200,81 +237,16 @@ void MainWindow::on_cb_AutoReconnection_stateChanged(int arg1)
         m_Eeg->SetAutoReconnection(ui->cb_AutoReconnection->isChecked());
 }
 
-void MainWindow::on_pb_PowerOff_clicked()
-{
-    if (m_Eeg == nullptr || !m_Eeg->IsStarted())
-        return;
-
-    if (m_Eeg->IsRecording())
-    {
-        if (QMessageBox::question(this, "Record is started",  "Record is started on device.\nTorn off device anyway?") != QMessageBox::Yes)
-            return;
-    }
-
-    m_Eeg->PowerOff();
-}
-
 void MainWindow::OnUpdateEegData(GarantEEG::GARANT_EEG_DATA eegData)
 {
     if (m_Eeg == nullptr || !m_Eeg->IsStarted())
         return;
 
-    /*QChart *chart = (QChart*)ui->gv_Graphics->chart();
-
-    if (chart == nullptr)
-        return;
-
-    double minValue = 999.0;
-    double maxValue = -999.0;
-    static int positions[8] = { 0 };
-
-    for (int i = 0; i < 8; i++)
-    {
-        QVector<QPointF> points = m_LineSeries[i]->pointsVector();
-
-        int maxSize = m_DisplaySeconds * 500;
-        int size = points.size();
-
-        if (size < maxSize)
-        {
-            points.resize(maxSize);
-
-            for (int j = size; j < maxSize; j++)
-                points[j] = QPointF(j, 0.0);
-        }
-
-        int &position = positions[i];
-
-        for (int j = 0; j < eegData.DataRecordsCount; j++)
-        {
-            //double value = eegData.RawChannelsData[j].Value[i] + ((i - 4.0) * 1.0);
-            //double value = eegData.RawChannelsData[j].Value[i] + ((i - 4) * 0.001);
-            double value = eegData.RawChannelsData[j].Value[i];
-
-            points[position] = QPointF(position, value);
-            position++;
-
-            if (position >= points.size())
-                position = 0;
-        }
-
-        for (const QPointF &point : points)
-        {
-            minValue = std::min(minValue, point.y());
-            maxValue = std::max(maxValue, point.y());
-        }
-
-        m_LineSeries[i]->replace(points);
-    }
-
-    m_AxisY->setRange(minValue, maxValue);*/
-
-
     //192.168.127.125
     if (eegData.DataRecordsCount > 0)
     {
         double rate = 0.0005;// (double)m_Eeg->GetRate() / 1000.0;
-        qDebug() << "m_Eeg->GetRate()" << m_Eeg->GetRate() << ((double)m_Eeg->GetRate() / 1000.0);
+		//qDebug() << "m_Eeg->GetRate()" << m_Eeg->GetRate() << ((double)m_Eeg->GetRate() / 1000.0);
         double timeStep = 1000.0 / (double)m_Eeg->GetRate();
 
         for (int i = 0; i < 8; i++)
@@ -303,22 +275,21 @@ void MainWindow::OnUpdateEegData(GarantEEG::GARANT_EEG_DATA eegData)
     }
 }
 
-void MainWindow::on_pb_IndicationStart_clicked()
+void MainWindow::on_pb_Settings_clicked()
 {
-    if (m_Eeg == nullptr || !m_Eeg->IsStarted())
-        return;
-
-    ui->sb_IndicationValue->setEnabled(false);
-    ui->pb_IndicationStart->setEnabled(false);
-    ui->pb_IndicationStop->setEnabled(true);
+	SettingsForm(m_Eeg, ui->qwt_Chart, this).exec();
 }
 
-void MainWindow::on_pb_IndicationStop_clicked()
+void MainWindow::on_pb_CheckImpedance_clicked()
 {
-    if (m_Eeg == nullptr || !m_Eeg->IsStarted())
-        return;
+	if (m_ImpedanceForm == nullptr)
+	{
+		m_ImpedanceForm = new ImpedanceForm();
+		connect(this, &MainWindow::UpdateEegData, m_ImpedanceForm, &ImpedanceForm::OnUpdateEegData);
+	}
 
-    ui->sb_IndicationValue->setEnabled(true);
-    ui->pb_IndicationStart->setEnabled(true);
-    ui->pb_IndicationStop->setEnabled(false);
+	if (!m_ImpedanceForm->isVisible())
+		m_ImpedanceForm->resetValues();
+
+	GarantUtility::BringWidgetToTop(m_ImpedanceForm);
 }

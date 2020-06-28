@@ -42,9 +42,12 @@ public:
 
 public:
     void appendCurve(QString const &key, QString const &title, QColor const &color);
+	void setCurveColor(const QString &title, const QColor &color);
     void appendPoints(QString const &key, QJsonArray const &x, QJsonArray const &y);
     void appendValues(QString const &key, double inc, const QList<double> &values);
     void setMaxSeconds(double seconds);
+
+	const std::unordered_map<QString, std::unique_ptr<Curve>, QStringHash> &curves() const { return _curves; }
 
 protected:
     QSize minimumSizeHint() const override { return {200, 200}; }
