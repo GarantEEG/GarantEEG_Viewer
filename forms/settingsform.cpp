@@ -1,10 +1,18 @@
+/**
+@file settingsform.cpp
+
+@brief Реализация класса окна настроек
+
+@author Мустакимов Т.Р.
+**/
+//----------------------------------------------------------------------------------
 #include "forms/settingsform.h"
 #include "ui_settingsform.h"
 #include <QMessageBox>
 #include <QTableWidgetItem>
 #include <QColorDialog>
 #include <QHeaderView>
-
+//----------------------------------------------------------------------------------
 SettingsForm::SettingsForm(GarantEEG::IGarantEEG *eeg, Chart *chart, QWidget *parent)
 : QDialog(parent), ui(new Ui::SettingsForm), m_Eeg(eeg), m_Chart(chart)
 {
@@ -55,12 +63,12 @@ SettingsForm::SettingsForm(GarantEEG::IGarantEEG *eeg, Chart *chart, QWidget *pa
 		}
 	}
 }
-
+//----------------------------------------------------------------------------------
 SettingsForm::~SettingsForm()
 {
 	delete ui;
 }
-
+//----------------------------------------------------------------------------------
 void SettingsForm::on_pb_PowerOff_clicked()
 {
 	if (m_Eeg == nullptr || !m_Eeg->IsStarted())
@@ -74,7 +82,7 @@ void SettingsForm::on_pb_PowerOff_clicked()
 
 	m_Eeg->PowerOff();
 }
-
+//----------------------------------------------------------------------------------
 void SettingsForm::on_pb_IndicationStart_clicked()
 {
 	if (m_Eeg == nullptr || !m_Eeg->IsStarted())
@@ -84,7 +92,7 @@ void SettingsForm::on_pb_IndicationStart_clicked()
 	ui->pb_IndicationStart->setEnabled(false);
 	ui->pb_IndicationStop->setEnabled(true);
 }
-
+//----------------------------------------------------------------------------------
 void SettingsForm::on_pb_IndicationStop_clicked()
 {
 	if (m_Eeg == nullptr || !m_Eeg->IsStarted())
@@ -94,7 +102,7 @@ void SettingsForm::on_pb_IndicationStop_clicked()
 	ui->pb_IndicationStart->setEnabled(true);
 	ui->pb_IndicationStop->setEnabled(false);
 }
-
+//----------------------------------------------------------------------------------
 void SettingsForm::on_tw_EegChannels_cellClicked(int row, int column)
 {
 	if (column != 1 || m_Chart == nullptr)
@@ -121,8 +129,9 @@ void SettingsForm::on_tw_EegChannels_cellClicked(int row, int column)
 
 	ui->tw_EegChannels->setCurrentCell(row, 0);
 }
-
+//----------------------------------------------------------------------------------
 void SettingsForm::on_pb_OK_clicked()
 {
 	close();
 }
+//----------------------------------------------------------------------------------

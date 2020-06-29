@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/eegdiagram.qml</file>
+        <file>qml/electrode.qml</file>
+    </qresource>
+</RCC>

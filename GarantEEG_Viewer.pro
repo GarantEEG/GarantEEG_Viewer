@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui widgets
+QT       += core gui widgets quick quickwidgets qml
 
 TARGET = GarantEEG_Viewer
 TEMPLATE = app
@@ -57,7 +57,10 @@ SOURCES += \
 		charts/chart.cpp \
 		charts/curve.cpp \
 		charts/curve_data.cpp \
+	common.cpp \
+	forms/filtersdialog.cpp \
 	forms/impedanceform.cpp \
+	forms/newfilterdialog.cpp \
 	forms/settingsform.cpp \
         main.cpp \
 		forms/mainwindow.cpp
@@ -66,16 +69,24 @@ HEADERS += \
 		charts/chart.h \
 		charts/curve.h \
 		charts/curve_data.h \
+		common.h \
+		forms/filtersdialog.h \
 		forms/impedanceform.h \
 		forms/mainwindow.h \
+		forms/newfilterdialog.h \
 		forms/settingsform.h
 
 FORMS += \
+		forms/filtersdialog.ui \
 		forms/impedanceform.ui \
 		forms/mainwindow.ui \
+		forms/newfilterdialog.ui \
 		forms/settingsform.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+	resource.qrc

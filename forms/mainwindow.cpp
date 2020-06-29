@@ -6,30 +6,7 @@
 #include "forms/mainwindow.h"
 #include "ui_mainwindow.h"
 #include "forms/settingsform.h"
-
-namespace GarantUtility
-{
-void BringWidgetToTop(QWidget *widget)
-{
-	if (widget != nullptr)
-	{
-		if (widget->isMinimized())
-		{
-			if (widget->isMaximized())
-				widget->showMaximized();
-			else
-				widget->showNormal();
-		}
-		else if (widget->isVisible())
-			widget->activateWindow();
-		else
-		{
-			widget->show();
-			widget->activateWindow();
-		}
-	}
-}
-} //GarantUtility
+#include "common.h"
 
 MainWindow::MainWindow(QWidget *parent)
 : QMainWindow(parent), ui(new Ui::MainWindow)

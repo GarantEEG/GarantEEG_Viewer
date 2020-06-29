@@ -30,6 +30,9 @@ public:
 public slots:
 	void OnUpdateEegData(GarantEEG::GARANT_EEG_DATA eegData);
 
+private slots:
+	void on_pb_Close_clicked();
+
 private:
 	Ui::ImpedanceForm *ui;
 };
