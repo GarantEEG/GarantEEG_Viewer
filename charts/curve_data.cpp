@@ -1,16 +1,24 @@
-#include "curve_data.h"
+/**
+@file curve_data.cpp
 
+@brief Реализация класса для данных кривой графика
+
+@author Мустакимов Т.Р.
+**/
+//----------------------------------------------------------------------------------
+#include "curve_data.h"
+//----------------------------------------------------------------------------------
 CurveData::CurveData()
 {
     d_boundingRect = QRectF{};
 }
-
+//----------------------------------------------------------------------------------
 void CurveData::setPointsCount( int count )
 {
     _data.resize(count);
     d_boundingRect.setRight(count);
 }
-
+//----------------------------------------------------------------------------------
 void CurveData::appendValue(double value)
 {
     if (_data.empty())
@@ -21,13 +29,13 @@ void CurveData::appendValue(double value)
     updateBoundingRect(value);
     _currentIndex++;
 }
-
+//----------------------------------------------------------------------------------
 void CurveData::clear()
 {
     _data.clear();
     d_boundingRect.setRect(d_boundingRect.right(), 0.0, 0.0, 0.0);
 }
-
+//----------------------------------------------------------------------------------
 void CurveData::clear(double left)
 {
     {
@@ -57,7 +65,7 @@ void CurveData::clear(double left)
 
     d_boundingRect.setRect(0, yMin, _data.size(), yMax - yMin);
 }
-
+//----------------------------------------------------------------------------------
 void CurveData::updateBoundingRect(double value)
 {
     if (value > d_boundingRect.bottom())
@@ -66,3 +74,4 @@ void CurveData::updateBoundingRect(double value)
     if (value < d_boundingRect.top())
         d_boundingRect.setTop(value);
 }
+//----------------------------------------------------------------------------------

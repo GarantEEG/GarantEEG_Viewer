@@ -1,3 +1,11 @@
+/**
+@file chart.cpp
+
+@brief Реализация класса для графика
+
+@author Мустакимов Т.Р.
+**/
+//----------------------------------------------------------------------------------
 #include "chart.h"
 #include <qwt_plot_canvas.h>
 #include <qwt_plot_layout.h>
@@ -6,7 +14,7 @@
 #include <QMessageBox>
 #include <QMenu>
 #include <QThread>
-
+//----------------------------------------------------------------------------------
 namespace
 {
     auto gridPen()
@@ -20,7 +28,7 @@ namespace
         return pen;
     }
 } // namespace
-
+//----------------------------------------------------------------------------------
 QFont Chart::axisFont()
 {
     QFont font;
@@ -28,7 +36,7 @@ QFont Chart::axisFont()
     font.setPointSize(10);
     return font;
 }
-
+//----------------------------------------------------------------------------------
 QFont Chart::titleFont()
 {
     QFont font;
@@ -36,14 +44,14 @@ QFont Chart::titleFont()
     font.setPointSize(12);
     return font;
 }
-
+//----------------------------------------------------------------------------------
 QwtText Chart::toQwtText(QString const &text, QFont const &font)
 {
     QwtText res{text};
     res.setFont(font);
     return res;
 }
-
+//----------------------------------------------------------------------------------
 Chart::Chart(QWidget *parent)
     : QwtPlot{parent}
 {
@@ -82,7 +90,7 @@ Chart::Chart(QWidget *parent)
     //connect( &m_myContext, &CSimpleContext::finished, this, [this]{dialogRelease = true; qDebug()<<"2"; }  );
     //connect( &m_myContext, &CSimpleContext::accepted, this, [this]{dialogRelease = true; qDebug()<<"3"; } );
 }
-
+//----------------------------------------------------------------------------------
 void Chart::customMenuRequested()
 {
     QMenu *menu = new QMenu(this);
@@ -95,7 +103,7 @@ void Chart::customMenuRequested()
     //menu->addAction("Set border", this, [this]{m_myContext.move(QCursor::pos()); execDialog = m_myContext.open(); qDebug()<<"ex diag"<<execDialog; });
     //menu->popup(QCursor::pos ());
 }
-
+//----------------------------------------------------------------------------------
 void Chart::appendCurve(QString const &key, QString const &title, QColor const &color)
 {
     auto curve = std::make_unique<Curve>();
@@ -107,7 +115,7 @@ void Chart::appendCurve(QString const &key, QString const &title, QColor const &
 
     _mark.setVisible(_curves.size()==1);
 }
-
+//----------------------------------------------------------------------------------
 void Chart::setCurveColor(const QString &title, const QColor &color)
 {
 	for (auto it = _curves.begin(); it != _curves.end(); ++it)
@@ -119,7 +127,7 @@ void Chart::setCurveColor(const QString &title, const QColor &color)
 		}
 	}
 }
-
+//----------------------------------------------------------------------------------
 void Chart::appendPoints(QString const &key, std::vector<double> const &x, std::vector<double> const &y)
 {
     if (x.empty())
@@ -143,7 +151,7 @@ void Chart::appendPoints(QString const &key, std::vector<double> const &x, std::
     fit();
     replot();
 }
-
+//----------------------------------------------------------------------------------
 void Chart::appendValues(QString const &key, double inc, std::vector<double> const &values)
 {
     auto it = _curves.find(key);
@@ -156,7 +164,7 @@ void Chart::appendValues(QString const &key, double inc, std::vector<double> con
     fit();
     replot();
 }
-
+//----------------------------------------------------------------------------------
 void Chart::setMaxSeconds(double seconds, double frameRate)
 {
     Q_ASSERT(seconds > 0.0);
@@ -175,7 +183,7 @@ void Chart::setMaxSeconds(double seconds, double frameRate)
         }
     }
 }
-
+//----------------------------------------------------------------------------------
 void Chart::fit()
 {
     if (_curves.empty())
@@ -197,14 +205,14 @@ void Chart::fit()
 
     setAxisScale(xBottom, min, max);
 }
-
+//----------------------------------------------------------------------------------
 void Chart::setFixedBorder(double min, double max)
 {
     Q_ASSERT(min<max);
     m_autoscale = false;
     setAxisScale(yLeft, min, max);
 }
-
+//----------------------------------------------------------------------------------
 Chart::~Chart()
 {
     m_myContext.clearFocus();
@@ -212,7 +220,7 @@ Chart::~Chart()
     m_myContext.accept();
     m_myContext.close();
 }
-
+//----------------------------------------------------------------------------------
 void Chart::setOffDialog()
 {
     qDebug()<<"exec dial value"<<execDialog;
@@ -223,8 +231,7 @@ void Chart::setOffDialog()
         QThread::msleep(1);
     }*/
 }
-
-//
+//----------------------------------------------------------------------------------
 CSimpleContext::CSimpleContext():QDialog{}
 {
     auto mainLayout = new QGridLayout{this};
@@ -245,19 +252,20 @@ CSimpleContext::CSimpleContext():QDialog{}
 
     setWindowFlags(Qt ::WindowCloseButtonHint);
 }
-
+//----------------------------------------------------------------------------------
 void CSimpleContext::onSetButtonClick()
 {
     if (m_minBord.value()>m_maxBord.value())
     {
-        QMessageBox::information( 0, "Ты тупой?", "min border>max border");
+		QMessageBox::warning(this, "Warning!", "min border>max border");
         return;
     }
     setVisible(false);
     emit onNewDataSet(m_minBord.value(), m_maxBord.value());
 }
-
+//----------------------------------------------------------------------------------
 void CSimpleContext::onOffAutoScale()
 {
     emit onNewDataSet(m_minBord.value(), m_maxBord.value());
 }
+//----------------------------------------------------------------------------------

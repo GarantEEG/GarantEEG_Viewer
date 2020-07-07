@@ -10,9 +10,8 @@
 #define SETTINGSFORM_H
 //----------------------------------------------------------------------------------
 #include <QDialog>
-
+#include <QTableWidgetItem>
 #include <include/GarantEEG_API_CPP.h>
-#include <charts/chart.h>
 //----------------------------------------------------------------------------------
 namespace Ui
 {
@@ -28,15 +27,22 @@ public:
 	/**
 	 * @brief SettingsForm Конструктор
 	 * @param eeg Указатель на интерфейс для работы с устройством
-	 * @param chart Указатель на виджет с графиками
 	 * @param parent Виджет-родитель
 	 */
-	explicit SettingsForm(GarantEEG::IGarantEEG *eeg, Chart *chart, QWidget *parent = nullptr);
+	explicit SettingsForm(GarantEEG::IGarantEEG *eeg, QWidget *parent = nullptr);
 
 	/**
 	 * @brief ~SettingsForm Деструктор
 	 */
 	~SettingsForm();
+
+	/**
+	 * @brief UpdateEegFilters Обновить все фильтры
+	 */
+	void UpdateEegFilters();
+
+signals:
+	void updateEegChannelsSummary();
 
 private slots:
 	/**
@@ -62,9 +68,38 @@ private slots:
 	void on_tw_EegChannels_cellClicked(int row, int column);
 
 	/**
-	 * @brief on_pb_OK_clicked Нажатие на кнопку ОК
+	 * @brief on_pb_Close_clicked Нажатие на кнопку ОК
 	 */
-	void on_pb_OK_clicked();
+	void on_pb_Close_clicked();
+
+	/**
+	 * @brief on_pb_AddFilter_clicked Нажатие на кнопку добавления нового фильтра
+	 */
+	void on_pb_AddFilter_clicked();
+
+	/**
+	 * @brief on_pb_RemoveSelectedFilter_clicked Нажатие на кнопку удаления текущего выбранного фильтра
+	 */
+	void on_pb_RemoveSelectedFilter_clicked();
+
+	/**
+	 * @brief on_pb_RemoveAllFilters_clicked Удаление всех фильтров
+	 */
+	void on_pb_RemoveAllFilters_clicked();
+
+	/**
+	 * @brief OnAddFilter Добавление нового фильтра
+	 * @param type Тип фильтра (строкой)
+	 * @param typeId Идентификатор типа фильтра
+	 * @param order Порядок фильтра
+	 * @param rangeMin Минимальная частота
+	 * @param rangeMax Максимальная частота
+	 */
+	void OnAddFilter(QString type, int typeId, int order, int rangeMin, int rangeMax);
+
+	void on_gb_UseFilters_toggled(bool arg1);
+
+	void on_tw_EegChannels_itemChanged(QTableWidgetItem *item);
 
 private:
 	//! Указатель на UI диалога
@@ -73,8 +108,18 @@ private:
 	//! Указатель на интерфейс для работы с устройством
 	GarantEEG::IGarantEEG *m_Eeg = nullptr;
 
-	//! Указатель для работы с виджетом графиков
-	Chart *m_Chart = nullptr;
+	//! Флаг загрузки данных
+	bool m_loading = true;
+
+	//! Список смещений для данных по фильтрам
+	enum FILTER_VARIABLE_INDEX
+	{
+		FVI_TYPE = 0,
+		FVI_TYPE_ID,
+		FVI_ORDER,
+		FVI_RANGE_MIN,
+		FVI_RANGE_MAX
+	};
 };
 //----------------------------------------------------------------------------------
 #endif // SETTINGSFORM_H

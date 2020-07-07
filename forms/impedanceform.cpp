@@ -23,10 +23,7 @@ ImpedanceForm::ImpedanceForm(QWidget *parent)
 		headerView->setSectionResizeMode(1, QHeaderView::Stretch);
 	}
 
-	QStringList channels =
-	{
-		"Po7", "O1", "Oz", "P3", "Pz", "P4", "O2", "Po8", "Ref", "Gnd"
-	};
+	QStringList channels = channelNames();
 
 	QQuickItem *root = ui->qw_Electrodes->rootObject();
 	ui->tw_ImpedanceTable->setRowCount(channels.size());
@@ -57,6 +54,14 @@ ImpedanceForm::ImpedanceForm(QWidget *parent)
 ImpedanceForm::~ImpedanceForm()
 {
 	delete ui;
+}
+//----------------------------------------------------------------------------------
+QStringList ImpedanceForm::channelNames()
+{
+	return QStringList
+			{
+				"Po7", "O1", "Oz", "P3", "Pz", "P4", "O2", "Po8", "Ref", "Gnd"
+			};
 }
 //----------------------------------------------------------------------------------
 void ImpedanceForm::resetValues()

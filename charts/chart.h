@@ -1,6 +1,14 @@
+/**
+@file chart.h
+
+@brief Объявление класса для графика
+
+@author Мустакимов Т.Р.
+**/
+//----------------------------------------------------------------------------------
 #ifndef CHART_H
 #define CHART_H
-
+//----------------------------------------------------------------------------------
 //#include <hash_functions.h>
 #include <qwt_legend.h>
 #include <qwt_plot.h>
@@ -14,9 +22,9 @@
 #include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QDialog>
-
+//----------------------------------------------------------------------------------
 // вместо #include <hash_functions.h>
-class  QStringHash
+class QStringHash
 {
 public:
     std::size_t operator()(QString const &var) const
@@ -24,7 +32,7 @@ public:
         return std::hash<std::string>{}(var.toStdString());
     }
 };
-
+//----------------------------------------------------------------------------------
 class  QUuidHash
 {
 public:
@@ -33,8 +41,9 @@ public:
         return QStringHash{}(var.toString());
     }
 };
-
-class CSimpleContext:public QDialog{
+//----------------------------------------------------------------------------------
+class CSimpleContext:public QDialog
+{
     Q_OBJECT
 public:
     CSimpleContext();
@@ -52,7 +61,7 @@ private:
     QDoubleSpinBox m_minBord;
     QDoubleSpinBox m_maxBord;
 };
-
+//----------------------------------------------------------------------------------
 // сам chart
 class Chart : public QwtPlot
 {
@@ -74,11 +83,12 @@ public:
     void appendValues(QString const &key, double inc, std::vector<double> const &values);
     void setMaxSeconds(double seconds, double frameRate);
     void setOffDialog();
+	inline void clearCurves(){ _curves.clear(); }
 
 	const std::unordered_map<QString, std::unique_ptr<Curve>, QStringHash> &curves() const { return _curves; }
 
 protected:
-	QSize minimumSizeHint() const override { return {50, 50}; }
+	QSize minimumSizeHint() const override { return {200, 200}; }
     void setFixedBorder(double min, double max);
 
 private:
@@ -98,5 +108,6 @@ private:
 
     CSimpleContext m_myContext;
 };
-
+//----------------------------------------------------------------------------------
 #endif // CHART_H
+//----------------------------------------------------------------------------------

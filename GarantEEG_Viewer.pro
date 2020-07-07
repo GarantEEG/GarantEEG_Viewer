@@ -58,26 +58,25 @@ SOURCES += \
 		charts/curve.cpp \
 		charts/curve_data.cpp \
 	common.cpp \
-	forms/filtersdialog.cpp \
 	forms/impedanceform.cpp \
 	forms/newfilterdialog.cpp \
 	forms/settingsform.cpp \
         main.cpp \
-		forms/mainwindow.cpp
+		forms/mainwindow.cpp \
+	managers/configmanager.cpp
 
 HEADERS += \
 		charts/chart.h \
 		charts/curve.h \
 		charts/curve_data.h \
 		common.h \
-		forms/filtersdialog.h \
 		forms/impedanceform.h \
 		forms/mainwindow.h \
 		forms/newfilterdialog.h \
-		forms/settingsform.h
+		forms/settingsform.h \
+		managers/configmanager.h
 
 FORMS += \
-		forms/filtersdialog.ui \
 		forms/impedanceform.ui \
 		forms/mainwindow.ui \
 		forms/newfilterdialog.ui \
