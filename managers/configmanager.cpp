@@ -28,7 +28,6 @@ QJsonObject CFilterInfo::toJson() const
 	{
 		{ "type", m_type },
 		{ "order", m_order },
-		{ "rate", m_rate },
 		{ "low_frequency", m_lowFrequency },
 		{ "hight_frequency", m_hightFrequency },
 		{ "channels", channels }
@@ -44,9 +43,6 @@ CFilterInfo CFilterInfo::fromJson(const QJsonObject &obj)
 
 	if (obj.contains("order") && obj["order"].isDouble())
 		filter.m_order = obj["order"].toInt();
-
-	if (obj.contains("rate") && obj["rate"].isDouble())
-		filter.m_type = obj["rate"].toInt();
 
 	if (obj.contains("low_frequency") && obj["low_frequency"].isDouble())
 		filter.m_lowFrequency = obj["low_frequency"].toInt();
@@ -99,6 +95,9 @@ void CConfigManager::resetValues()
 		m_curveColors[i] = CONFIG_DEFAULT_VALUE_curveColors[i];
 		m_curveIsChecked[i] = true;
 	}
+
+	m_useFilters = CONFIG_DEFAULT_VALUE_useFilters;
+	m_filters.clear();
 }
 //----------------------------------------------------------------------------------
 void CConfigManager::load()
@@ -163,6 +162,11 @@ void CConfigManager::load()
 		}
 	}
 
+	if (jsonObj.contains("use_filters") && jsonObj["use_filters"].isBool())
+		m_useFilters = jsonObj["use_filters"].toBool();
+	else
+		m_useFilters = CONFIG_DEFAULT_VALUE_useFilters;
+
 	if (jsonObj.contains("filters") && jsonObj["filters"].isArray())
 	{
 		QJsonArray filtersArray = jsonObj["filters"].toArray();
@@ -213,6 +217,7 @@ void CConfigManager::save()
 			{ "autoreconnect", m_autoreconnect },
 			{ "display_seconds", m_displaySeconds },
 			{ "eeg_colors", eegColors },
+			{ "use_filters", m_useFilters },
 			{ "filters", filtersArray }
 		}
 	};

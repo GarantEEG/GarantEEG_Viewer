@@ -22,7 +22,12 @@ public:
 	 */
     Curve();
 
-public:
+	/**
+	 * @brief GetCurveData Получить указатель на данные кривой
+	 * @return Указатель на данные кривой
+	 */
+	CurveData *GetCurveData() { return _data; }
+
 	/**
 	 * @brief appendPoint Добавить точку на кривую
 	 * @param x Координата X

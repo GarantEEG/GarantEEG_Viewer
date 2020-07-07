@@ -36,11 +36,6 @@ public:
 	 */
 	~SettingsForm();
 
-	/**
-	 * @brief UpdateEegFilters Обновить все фильтры
-	 */
-	void UpdateEegFilters();
-
 signals:
 	void updateEegChannelsSummary();
 

@@ -70,19 +70,19 @@ SettingsForm::SettingsForm(GarantEEG::IGarantEEG *eeg, QWidget *parent)
 		ui->tw_EegChannels->setItem(row, 1, item);
 	}
 
-	/*QSettings settings("Neurotrend", "GarantEegStreamer");
+	ui->gb_UseFilters->setChecked(config.useFilters());
 
-	ui->gb_UseFilters->setChecked(GarantUtility::GetSettingInt(settings, "UseFilters", 1) != 0);
-	int filtersCount = GarantUtility::GetSettingInt(settings, "FiltersCount", 1);
+	const QList<CFilterInfo> &filters = config.filters();
 
-	for (int i = 0; i < filtersCount; i++)
+	for (const CFilterInfo &filter : filters)
 	{
-		OnAddFilter(settings.value(QString("Filter%1_Type").arg(i), "Butterworth").toString(),
-					  GarantUtility::GetSettingInt(settings, QString("Filter%1_TypeId").arg(i), 1),
-					  GarantUtility::GetSettingInt(settings, QString("Filter%1_Order").arg(i), 2),
-					  GarantUtility::GetSettingInt(settings, QString("Filter%1_RangeMin").arg(i), 1),
-					  GarantUtility::GetSettingInt(settings, QString("Filter%1_RangeMax").arg(i), 45));
-	}*/
+		QString typeString = "Unknown";
+
+		if (filter.m_type == 1)
+			typeString = "Butterworth";
+
+		OnAddFilter(typeString, filter.m_type, filter.m_order, filter.m_lowFrequency, filter.m_hightFrequency);
+	}
 
 	m_loading = false;
 }
@@ -193,6 +193,11 @@ void SettingsForm::on_pb_RemoveSelectedFilter_clicked()
 			if (filters != nullptr)
 				m_Eeg->RemoveFilter(filters[index]);
 		}
+
+		QList<CFilterInfo> &filters = CConfigManager::instance().filters();
+
+		if (index < filters.size())
+			filters.removeAt(index);
 	}
 }
 //----------------------------------------------------------------------------------
@@ -205,6 +210,8 @@ void SettingsForm::on_pb_RemoveAllFilters_clicked()
 
 	if (m_Eeg != nullptr)
 		m_Eeg->RemoveAllFilters();
+
+	CConfigManager::instance().filters().clear();
 }
 //----------------------------------------------------------------------------------
 void SettingsForm::OnAddFilter(QString type, int typeId, int order, int rangeMin, int rangeMax)
@@ -218,34 +225,26 @@ void SettingsForm::OnAddFilter(QString type, int typeId, int order, int rangeMin
 	item->setData(Qt::UserRole + FVI_RANGE_MAX, rangeMax);
 
 	ui->lw_Filters->addItem(item);
-}
-//----------------------------------------------------------------------------------
-void SettingsForm::UpdateEegFilters()
-{
-	if (m_Eeg != nullptr)
+
+	if (!m_loading)
 	{
-		m_Eeg->RemoveAllFilters();
+		CFilterInfo filter;
 
-		int count = ui->lw_Filters->count();
+		filter.m_type = typeId;
+		filter.m_order = order;
+		filter.m_lowFrequency = rangeMin;
+		filter.m_hightFrequency = rangeMax;
 
-		for (int i = 0; i < count; i++)
-		{
-			QListWidgetItem *item = ui->lw_Filters->item(i);
-
-			if (item != nullptr)
-			{
-				auto filter = m_Eeg->AddFilter(item->data(Qt::UserRole + FVI_TYPE_ID).toInt(), item->data(Qt::UserRole + FVI_ORDER).toInt());
-
-				if (filter != nullptr)
-					m_Eeg->SetupFilter(filter, m_Eeg->GetRate(), item->data(Qt::UserRole + FVI_RANGE_MIN).toInt(), item->data(Qt::UserRole + FVI_RANGE_MAX).toInt());
-			}
-		}
+		CConfigManager::instance().filters() << filter;
 	}
 }
 //----------------------------------------------------------------------------------
 void SettingsForm::on_gb_UseFilters_toggled(bool arg1)
 {
+	Q_UNUSED(arg1);
 
+	if (!m_loading)
+		CConfigManager::instance().setUseFilters(ui->gb_UseFilters->isChecked());
 }
 //----------------------------------------------------------------------------------
 void SettingsForm::on_tw_EegChannels_itemChanged(QTableWidgetItem *item)

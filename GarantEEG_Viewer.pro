@@ -57,6 +57,7 @@ SOURCES += \
 		charts/chart.cpp \
 		charts/curve.cpp \
 		charts/curve_data.cpp \
+	charts/custom_context.cpp \
 	common.cpp \
 	forms/impedanceform.cpp \
 	forms/newfilterdialog.cpp \
@@ -69,6 +70,7 @@ HEADERS += \
 		charts/chart.h \
 		charts/curve.h \
 		charts/curve_data.h \
+		charts/custom_context.h \
 		common.h \
 		forms/impedanceform.h \
 		forms/mainwindow.h \

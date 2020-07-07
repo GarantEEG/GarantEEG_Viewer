@@ -17,7 +17,8 @@
 #include <qwt_text.h>
 #include <memory>
 #include <unordered_map>
-#include "curve.h"
+#include "charts/curve.h"
+#include "charts/custom_context.h"
 #include <QUuid>
 #include <QDoubleSpinBox>
 #include <QPushButton>
@@ -42,71 +43,61 @@ public:
     }
 };
 //----------------------------------------------------------------------------------
-class CSimpleContext:public QDialog
-{
-    Q_OBJECT
-public:
-    CSimpleContext();
+struct AutoScaleParams{
+	bool IsValid()const{ return MinValue<MaxValue;  }
 
-public:
-    void onSetButtonClick();
-    //bool close(){ setVisible(false); }
-    void onOffAutoScale();
-
-signals:
-    void onNewDataSet(double min, double max);
-
-private:
-    QPushButton m_setButton;
-    QDoubleSpinBox m_minBord;
-    QDoubleSpinBox m_maxBord;
+	bool Autoscale;
+	double MinValue;
+	double MaxValue;
 };
 //----------------------------------------------------------------------------------
-// сам chart
 class Chart : public QwtPlot
 {
-    Q_OBJECT
-public:
-    ~Chart();
-
-    static QFont axisFont();
-    static QFont titleFont();
-    static QwtText toQwtText(QString const &text, QFont const &font = axisFont());
+	Q_OBJECT
 
 public:
-    explicit Chart(QWidget *parent = nullptr);
+	~Chart() { releaseDialog(); }
+	static QFont axisFont();
+	static QFont titleFont();
+	static QwtText toQwtText(QString const &text, QFont const &font = axisFont());
 
 public:
-    void appendCurve(QString const &key, QString const &title, QColor const &color);
-	void setCurveColor(const QString &title, const QColor &color);
-    void appendPoints(QString const &key, std::vector<double> const &x, std::vector<double> const &y);
-    void appendValues(QString const &key, double inc, std::vector<double> const &values);
-    void setMaxSeconds(double seconds, double frameRate);
-    void setOffDialog();
+	explicit Chart(QWidget *parent = nullptr);
+
+public:
+	void appendCurve(QString const &key, QString const &title, QColor const &color);
+	void appendPoints(QString const &key, std::vector<float> const &points);
+	void appendPoint(QString const &key, float const &value);
+	void setParams(AutoScaleParams const& params );
+	void releaseDialog() { _myContext.done(0); }
+	void restart();
+	void reCalcBoundingRect(QString const &key);
+	void updateView();
 	inline void clearCurves(){ _curves.clear(); }
+	void setPointsCount(uint const & sec, uint const& framerate);
 
-	const std::unordered_map<QString, std::unique_ptr<Curve>, QStringHash> &curves() const { return _curves; }
+signals:
+	void onBorderDataChanged(AutoScaleParams const &params);
 
 protected:
 	QSize minimumSizeHint() const override { return {200, 200}; }
-    void setFixedBorder(double min, double max);
+	QSize sizeHint() const override { return {200, 200}; }
 
 private:
-    void fit();
-    void customMenuRequested();
+	void fit();
+	void customMenuRequested();
+	void onAutoScale();
+	void setFixedBorder(double min, double max);
+	AutoScaleParams params();
 
 private:
-    bool m_autoscale{true};
-    bool dialogRelease{false};
-    double _maxSeconds{0.0};
-    double _frameRate{0.0};
-    int execDialog{0};
-    QwtPlotGrid _grid;
-    QwtLegend _legend;
-    QwtPlotMarker _mark;
-    std::unordered_map<QString, std::unique_ptr<Curve>, QStringHash> _curves;
-
-    CSimpleContext m_myContext;
+	bool _autoscale{true};
+	uint _pointsCount{0};
+	QwtPlotGrid _grid;
+	QwtLegend _legend;
+	QwtPlotMarker _mark;
+	std::unordered_map<QString, std::unique_ptr<Curve>, QStringHash> _curves;
+	CSimpleContext _myContext;
 };
 //----------------------------------------------------------------------------------
 #endif // CHART_H

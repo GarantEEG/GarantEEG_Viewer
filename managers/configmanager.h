@@ -28,6 +28,7 @@ const QString CONFIG_DEFAULT_VALUE_curveColors[8] =
 	"#FFFF00", //Qt::yellow
 	"#808000" //Qt::darkYellow
 };
+const bool CONFIG_DEFAULT_VALUE_useFilters = true;
 //----------------------------------------------------------------------------------
 //! Класс для хранения информации о фильтре
 class CFilterInfo
@@ -48,9 +49,6 @@ public:
 
 	//! Порядок фильтра
 	int m_order = 0;
-
-	//! Частота потока данных
-	int m_rate = 0;
 
 	//! Минимальная частота среза
 	int m_lowFrequency = 0;
@@ -133,6 +131,9 @@ public:
 	bool curveIsChecked(uint index) const { return (index < 8 ? m_curveIsChecked[index] : false); }
 	void setCurveIsChecked(uint index, const bool &value) { if (index < 8) m_curveIsChecked[index] = value; }
 
+	const bool &useFilters() const { return m_useFilters; }
+	void setUseFilters(const bool &value) { m_useFilters = value; }
+
 	QList<CFilterInfo> &filters() { return m_filters; }
 
 protected:
@@ -167,6 +168,9 @@ protected:
 		true, true, true, true,
 		true, true, true, true
 	};
+
+	//! Флаг необходимости использования фильтров
+	bool m_useFilters = false;
 
 	//! Список фильтров
 	QList<CFilterInfo> m_filters;

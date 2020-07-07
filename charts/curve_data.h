@@ -71,6 +71,16 @@ public:
 	 */
     void clear(double left);
 
+	/**
+	 * @brief restart Сбросить начало отображения данных на 0
+	 */
+	void restart();
+
+	/**
+	 * @brief reCalcBoundingRect Пересчитать границы
+	 */
+	void reCalcBoundingRect();
+
 private:
 	/**
 	 * @brief updateBoundingRect Обновить отображаемую область

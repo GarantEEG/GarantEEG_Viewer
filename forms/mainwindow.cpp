@@ -75,12 +75,12 @@ bool MainWindow::initialize()
 
 	for (const CFilterInfo &filter : filters)
 	{
-		GarantEEG::CAbstractFilter *eegFilter = nullptr;
+		const GarantEEG::CAbstractFilter *eegFilter = nullptr;
 
 		if (filter.m_channels.isEmpty())
 			eegFilter = m_Eeg->AddFilter(filter.m_type, filter.m_order);
 		else
-			eegFilter = m_Eeg->AddFilter(filter.m_type, filter.m_order, filter.m_channels.size(), &filter.m_channels[i]);
+			eegFilter = m_Eeg->AddFilter(filter.m_type, filter.m_order, filter.m_channels.size(), &filter.m_channels[0]);
 
 		if (eegFilter != nullptr)
 			m_Eeg->SetupFilter(eegFilter, m_Eeg->GetRate(), filter.m_lowFrequency, filter.m_hightFrequency);
@@ -117,7 +117,7 @@ void MainWindow::onUpdateEegChannelsSummary()
 	QStringList channels = ImpedanceForm::channelNames();
 
 	ui->qwt_Chart->clearCurves();
-	ui->qwt_Chart->setMaxSeconds(config.displaySeconds(), 500);
+	ui->qwt_Chart->setPointsCount(config.displaySeconds(), 500);
 
 	for (int i = 0; i < 8; i++)
 	{
@@ -297,36 +297,27 @@ void MainWindow::OnUpdateEegData(GarantEEG::GARANT_EEG_DATA eegData)
     if (m_Eeg == nullptr || !m_Eeg->IsStarted())
         return;
 
-    //192.168.127.125
     if (eegData.DataRecordsCount > 0)
     {
-        double rate = 0.0005;// (double)m_Eeg->GetRate() / 1000.0;
-		//qDebug() << "m_Eeg->GetRate()" << m_Eeg->GetRate() << ((double)m_Eeg->GetRate() / 1000.0);
-        double timeStep = 1000.0 / (double)m_Eeg->GetRate();
+		bool useFilters = (CConfigManager::instance().useFilters() && m_Eeg->GetFiltersCount());
 
         for (int i = 0; i < 8; i++)
-        {
-			std::vector<double> x;
-			std::vector<double> y;
-            //QList<double> dataList;
+		{
+			std::vector<float> y;
 
             for (int j = 0; j < eegData.DataRecordsCount; j++)
             {
-				double value = (m_Eeg->GetFiltersCount() ? eegData.FilteredChannelsData[j].Value[i] : eegData.RawChannelsData[j].Value[i]);
+				double value = (useFilters ? eegData.FilteredChannelsData[j].Value[i] : eegData.RawChannelsData[j].Value[i]) * 1000.0;
                 //double value = eegData.RawChannelsData[j].Value[i] + ((i - 4.0) * 1.0);
 				//double value = eegData.RawChannelsData[j].Value[i] + ((i - 4) * 0.001);
 
-				x.push_back(eegData.Time + (j * timeStep));
 				y.push_back(value);
-                //dataList << value;
             }
 
-            ui->qwt_Chart->appendPoints(QString("EEG%1").arg(i + 1), x, y);
-
-            //ui->qwt_Chart->appendValues(QString("EEG%1").arg(i + 1), rate, dataList);
+			ui->qwt_Chart->appendPoints(QString("EEG%1").arg(i + 1), y);
         }
 
-        ui->qwt_Chart->update();
+		ui->qwt_Chart->updateView();
 
 		ui->pb_Battery->setValue(m_Eeg->GetBatteryStatus());
     }

@@ -15,25 +15,32 @@ CurveData::CurveData()
 //----------------------------------------------------------------------------------
 void CurveData::setPointsCount( int count )
 {
-    _data.resize(count);
-    d_boundingRect.setRight(count);
+	_data.resize(count);
+	d_boundingRect.setRight(count);
 }
 //----------------------------------------------------------------------------------
 void CurveData::appendValue(double value)
 {
-    if (_data.empty())
-        return;
+	if (_data.size()<=0)
+		return;
 
-    int potential_index = _currentIndex%_data.size();
-    _data[potential_index] = QPointF((double)potential_index,value);
-    updateBoundingRect(value);
-    _currentIndex++;
+	int potential_index = _currentIndex%_data.size();
+	_data[potential_index] = QPointF((double)potential_index,value);
+	updateBoundingRect(value);
+	_currentIndex++;
 }
 //----------------------------------------------------------------------------------
 void CurveData::clear()
 {
-    _data.clear();
-    d_boundingRect.setRect(d_boundingRect.right(), 0.0, 0.0, 0.0);
+	_currentIndex = 0;
+	_data.clear();
+	d_boundingRect.setRect(d_boundingRect.right(), 0.0, 0.0, 0.0);
+}
+//----------------------------------------------------------------------------------
+void CurveData::restart()
+{
+	_currentIndex = 0;
+	d_boundingRect.setRect(d_boundingRect.right(), 0.0, 0.0, 0.0);
 }
 //----------------------------------------------------------------------------------
 void CurveData::clear(double left)
@@ -68,10 +75,24 @@ void CurveData::clear(double left)
 //----------------------------------------------------------------------------------
 void CurveData::updateBoundingRect(double value)
 {
-    if (value > d_boundingRect.bottom())
-        d_boundingRect.setBottom(value);
+	if (value > d_boundingRect.bottom())
+		d_boundingRect.setBottom(value);
 
-    if (value < d_boundingRect.top())
-        d_boundingRect.setTop(value);
+	if (value < d_boundingRect.top())
+		d_boundingRect.setTop(value);
+}
+//----------------------------------------------------------------------------------
+void CurveData::reCalcBoundingRect()
+{
+	double minV = -0.00001;
+	double maxV = 0.00001;
+
+	for (auto point : _data)
+	{
+		minV = std::min(minV, point.y());
+		maxV = std::max(maxV, point.y());
+	}
+	d_boundingRect.setTop(minV);
+	d_boundingRect.setBottom(maxV);
 }
 //----------------------------------------------------------------------------------

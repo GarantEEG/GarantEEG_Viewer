@@ -6,7 +6,8 @@
 @author Мустакимов Т.Р.
 **/
 //----------------------------------------------------------------------------------
-#include "chart.h"
+#include "charts/chart.h"
+#include "charts/curve_data.h"
 #include <qwt_plot_canvas.h>
 #include <qwt_plot_layout.h>
 #include <QGridLayout>
@@ -55,217 +56,178 @@ QwtText Chart::toQwtText(QString const &text, QFont const &font)
 Chart::Chart(QWidget *parent)
     : QwtPlot{parent}
 {
-    plotLayout()->setAlignCanvasToScales(true);
+	plotLayout()->setAlignCanvasToScales(true);
 
-    enableAxis(QwtPlot::xBottom);
-    enableAxis(QwtPlot::yLeft);
+	enableAxis(QwtPlot::xBottom);
+	enableAxis(QwtPlot::yLeft);
 
-    setAxisAutoScale(QwtPlot::yLeft);
+	setAxisAutoScale(QwtPlot::yLeft);
 
-    setAxisTitle(QwtPlot::xBottom, toQwtText(tr("time, sec")));
+	setAxisTitle(QwtPlot::xBottom, toQwtText(tr("points, sec*framerate")));
 
-    _grid.setMajorPen(::gridPen());
-    _grid.setMinorPen(::gridPen());
-    _grid.attach(this);
+	_grid.setMajorPen(::gridPen());
+	_grid.setMinorPen(::gridPen());
+	_grid.attach(this);
 
-    setPalette(Qt::white);
+	setPalette(Qt::white);
 
-    auto canvas = static_cast<QwtPlotCanvas *>(this->canvas());
-    canvas->setPalette(Qt::white);
-    canvas->setBorderRadius(10.0);
+	auto canvas = static_cast<QwtPlotCanvas *>(this->canvas());
+	canvas->setPalette(Qt::white);
+	canvas->setBorderRadius(10.0);
 
-    _mark.setValue(0.0, 0.0);
-    _mark.setLineStyle(QwtPlotMarker::VLine);
-    _mark.setLabelAlignment(Qt::AlignRight | Qt::AlignBottom);
-    _mark.setLinePen(QPen(Qt::green, 4, Qt::SolidLine));
-    _mark.attach(this);
+	_mark.setLineStyle(QwtPlotMarker::VLine);
+	_mark.setLabelAlignment(Qt::AlignRight | Qt::AlignBottom);
+	_mark.setLinePen(QPen(Qt::green, 4, Qt::SolidLine));
+	_mark.attach(this);
+	_mark.setVisible(false);
 
-    insertLegend(&_legend, QwtPlot::BottomLegend);
+	insertLegend(&_legend, QwtPlot::BottomLegend);
 
-    setContextMenuPolicy(Qt::CustomContextMenu);
-    connect( this, &Chart::customContextMenuRequested, this, &Chart::customMenuRequested );
-    connect( &m_myContext, &CSimpleContext::onNewDataSet, this, &Chart::setFixedBorder );
-
-    //connect( &m_myContext, &CSimpleContext::rejected, this, [this]{dialogRelease = true; qDebug()<<"1"; } );
-    //connect( &m_myContext, &CSimpleContext::finished, this, [this]{dialogRelease = true; qDebug()<<"2"; }  );
-    //connect( &m_myContext, &CSimpleContext::accepted, this, [this]{dialogRelease = true; qDebug()<<"3"; } );
+	setContextMenuPolicy(Qt::CustomContextMenu);
+	connect( this, &Chart::customContextMenuRequested, this, &Chart::customMenuRequested );
+	connect( &_myContext, &CSimpleContext::onNewDataSet, this, &Chart::setFixedBorder );
 }
 //----------------------------------------------------------------------------------
-void Chart::customMenuRequested()
+void Chart::restart()
 {
-    QMenu *menu = new QMenu(this);
+	auto it = _curves.cbegin();
+	while (it != _curves.end())
+	{
+		it->second->GetCurveData()->restart();
+		it++;
+	}
+}
+//----------------------------------------------------------------------------------
+void Chart::reCalcBoundingRect(QString const &key)
+{
+	auto it = _curves.find(key);
+	if (it == _curves.end())
+		return;
 
-    QAction *pCheckAct = menu->addAction("Autoscale",this,[this]{ m_autoscale = !m_autoscale;
-                                                                if (!m_autoscale){m_myContext.onOffAutoScale();} else{ setAxisAutoScale(QwtPlot::yLeft, true); } });
-    pCheckAct->setCheckable(true);
-    pCheckAct->setChecked(m_autoscale);
-
-    //menu->addAction("Set border", this, [this]{m_myContext.move(QCursor::pos()); execDialog = m_myContext.open(); qDebug()<<"ex diag"<<execDialog; });
-    //menu->popup(QCursor::pos ());
+	it->second->GetCurveData()->reCalcBoundingRect();
+}
+//----------------------------------------------------------------------------------
+void Chart::setPointsCount(uint const & sec, uint const& framerate)
+{
+	Q_ASSERT(sec>0);
+	Q_ASSERT(framerate>0);
+	_pointsCount = sec*framerate;
+	setAxisScale(xBottom, 0.0, _pointsCount, framerate);
+}
+//----------------------------------------------------------------------------------
+void Chart::setParams(AutoScaleParams const &params)
+{
+	if (params.IsValid())
+	{
+		_autoscale = params.Autoscale;
+		if (_autoscale)
+		{
+			setAxisAutoScale(QwtPlot::yLeft);
+		}
+		else
+		{
+			setAxisScale(yLeft, params.MinValue, params.MaxValue);
+		}
+		_myContext.setValues(params.MinValue, params.MaxValue);
+	}
 }
 //----------------------------------------------------------------------------------
 void Chart::appendCurve(QString const &key, QString const &title, QColor const &color)
 {
-    auto curve = std::make_unique<Curve>();
-    curve->setPen(QColor{color}, 2.0);
-    curve->setTitle(toQwtText(title));
-    curve->attach(this);
-    curve->setMaxPoints(floor(_maxSeconds*_frameRate));
-    _curves.emplace(key, std::move(curve));
-
-    _mark.setVisible(_curves.size()==1);
+	auto curve = std::make_unique<Curve>();
+	curve->setPen(QColor{color}, 2.0);
+	curve->setTitle(toQwtText(title));
+	curve->GetCurveData()->setPointsCount(_pointsCount);
+	curve->attach(this);
+	_curves.emplace(key, std::move(curve));
+	_mark.setVisible(_curves.size()==1);
 }
 //----------------------------------------------------------------------------------
-void Chart::setCurveColor(const QString &title, const QColor &color)
+void Chart::appendPoints(QString const &key, std::vector<float> const &points)
 {
-	for (auto it = _curves.begin(); it != _curves.end(); ++it)
-	{
-		if (it->second->title().text() == title)
-		{
-			it->second->setPen(color, 2.0);
-			break;
-		}
-	}
+	if (points.empty())
+		return;
+
+	auto it = _curves.find(key);
+	if (it == _curves.end())
+		return;
+
+	for (auto point : points)
+		it->second->GetCurveData()->appendValue(point);
+
+	fit();
+	replot();
 }
 //----------------------------------------------------------------------------------
-void Chart::appendPoints(QString const &key, std::vector<double> const &x, std::vector<double> const &y)
+void Chart::appendPoint(QString const &key, float const &value)
 {
-    if (x.empty())
-        return;
+	auto it = _curves.find(key);
+	if (it == _curves.end())
+		return;
 
-    auto it = _curves.find(key);
-    if (it == _curves.end())
-        return;
-
-//    if (it->second->isGoingToLeft(x[0]))
-//        it->second->clear();
-
-    for (int i = 0; i < x.size(); ++i)
-        it->second->appendPoint(x[i]/ 1000.0, y[i]);
-
-    if( _curves.size()==1 )
-    {
-        _mark.setValue(it->second->getCurrentPos(), 0.0);
-    }
-
-    fit();
-    replot();
+	it->second->GetCurveData()->appendValue(value);
 }
 //----------------------------------------------------------------------------------
-void Chart::appendValues(QString const &key, double inc, std::vector<double> const &values)
+void Chart::updateView()
 {
-    auto it = _curves.find(key);
-    if (it == _curves.end())
-        return;
-
-    for (int i = 0; i < values.size(); ++i)
-        it->second->appendValue(inc, values[i]);
-
-    fit();
-    replot();
-}
-//----------------------------------------------------------------------------------
-void Chart::setMaxSeconds(double seconds, double frameRate)
-{
-    Q_ASSERT(seconds > 0.0);
-    Q_ASSERT(frameRate > 0.0);
-
-    _maxSeconds = seconds;
-    _frameRate = frameRate;
-    setAxisScale(xBottom, 0.0, _maxSeconds*_frameRate);
-
-    if (execDialog){
-        dialogRelease = false;
-        m_myContext.done(0);
-
-        while( !dialogRelease ){
-            QThread::msleep(1);
-        }
-    }
+	fit();
+	replot();
 }
 //----------------------------------------------------------------------------------
 void Chart::fit()
 {
-    if (_curves.empty())
-        return;
+	if (_curves.empty())
+		return;
 
-    auto it = _curves.cbegin();
+	auto it = _curves.cbegin();
 
-    double min = it->second->left();
-    double max = it->second->right();
+	if (_mark.isVisible())
+		_mark.setValue(it->second->GetCurveData()->getCurrentPos(), 0.0);
+}
+//----------------------------------------------------------------------------------
+void Chart::customMenuRequested()
+{
+	QMenu *menu = new QMenu(this);
 
-    while (++it != _curves.cend())
-    {
-        if (it->second->left() < min)
-            min = it->second->left();
+	QAction *pCheckAct = menu->addAction(tr("Autoscale"),this, &Chart::onAutoScale);
+	pCheckAct->setCheckable(true);
+	pCheckAct->setChecked(_autoscale);
 
-        if (it->second->right() > max)
-            max = it->second->right();
-    }
-
-    setAxisScale(xBottom, min, max);
+	menu->addAction(tr("Set amplitude range"), this, [this] { _myContext.move(QCursor::pos()); _myContext.exec(); });
+	menu->popup(QCursor::pos ());
+}
+//----------------------------------------------------------------------------------
+AutoScaleParams Chart::params()
+{
+	AutoScaleParams params;
+	params.Autoscale = _autoscale;
+	params.MinValue = _myContext.getMin();
+	params.MaxValue= _myContext.getMax();
+	return params;
 }
 //----------------------------------------------------------------------------------
 void Chart::setFixedBorder(double min, double max)
 {
-    Q_ASSERT(min<max);
-    m_autoscale = false;
-    setAxisScale(yLeft, min, max);
+	Q_ASSERT(min<max);
+	setAxisScale(yLeft, min, max);
+	_autoscale = false;
+	replot();
+
+	emit onBorderDataChanged( params() );
 }
 //----------------------------------------------------------------------------------
-Chart::~Chart()
+void Chart::onAutoScale()
 {
-    m_myContext.clearFocus();
-    m_myContext.done(0);
-    m_myContext.accept();
-    m_myContext.close();
-}
-//----------------------------------------------------------------------------------
-void Chart::setOffDialog()
-{
-    qDebug()<<"exec dial value"<<execDialog;
-    //dialogRelease = false;
-    m_myContext.done(0);
-
-    /*while( !dialogRelease ){
-        QThread::msleep(1);
-    }*/
-}
-//----------------------------------------------------------------------------------
-CSimpleContext::CSimpleContext():QDialog{}
-{
-    auto mainLayout = new QGridLayout{this};
-
-    mainLayout->addWidget(new QLabel("minBord"), 0,1,1,1);
-    mainLayout->addWidget(new QLabel("maxBord"), 0,2,1,1);
-    mainLayout->addWidget(&m_minBord, 1,1,1,1);
-    mainLayout->addWidget(&m_maxBord, 1,2,1,1);
-    mainLayout->addWidget(&m_setButton, 2,1,1,2);
-
-    m_minBord.setMinimum(-1e9);
-    m_minBord.setMaximum(1e9);
-
-    m_setButton.setText("set bord");
-
-    setVisible(false);
-    connect( &m_setButton, &QPushButton::clicked, this, &CSimpleContext::onSetButtonClick );
-
-    setWindowFlags(Qt ::WindowCloseButtonHint);
-}
-//----------------------------------------------------------------------------------
-void CSimpleContext::onSetButtonClick()
-{
-    if (m_minBord.value()>m_maxBord.value())
-    {
-		QMessageBox::warning(this, "Warning!", "min border>max border");
-        return;
-    }
-    setVisible(false);
-    emit onNewDataSet(m_minBord.value(), m_maxBord.value());
-}
-//----------------------------------------------------------------------------------
-void CSimpleContext::onOffAutoScale()
-{
-    emit onNewDataSet(m_minBord.value(), m_maxBord.value());
+	_autoscale = !_autoscale;
+	if (_autoscale)
+	{
+		setAxisAutoScale(QwtPlot::yLeft);
+		replot();
+		emit onBorderDataChanged(params());
+	}
+	else
+	{
+		_myContext.onOffAutoscale(); //=set fixed border
+	}
 }
 //----------------------------------------------------------------------------------
