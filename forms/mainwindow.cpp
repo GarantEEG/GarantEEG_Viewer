@@ -8,6 +8,7 @@
 //----------------------------------------------------------------------------------
 #include <QMessageBox>
 #include <QJsonArray>
+#include <QTime>
 #include <QDebug>
 
 #include "forms/mainwindow.h"
@@ -22,6 +23,11 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     qRegisterMetaType<GarantEEG::GARANT_EEG_DATA>("GarantEEG::GARANT_EEG_DATA");
+
+	connect(&m_RecordingTimer, &QTimer::timeout, [this]()
+	{
+		ui->l_RecordingTime->setText(QTime(0, 0, 0).addMSecs(m_RecordTime.elapsed()).toString("hh:mm:ss.zzz"));
+	});
 }
 //----------------------------------------------------------------------------------
 MainWindow::~MainWindow()
@@ -224,14 +230,17 @@ void MainWindow::on_pb_RecordStart_clicked()
 
         ui->pb_RecordPause->setEnabled(true);
         ui->pb_RecordResume->setEnabled(false);
+		m_RecordTime.restart();
+		m_RecordingTimer.start(100);
     }
 }
 //----------------------------------------------------------------------------------
 void MainWindow::on_pb_RecordStop_clicked()
 {
-    if (m_Eeg == nullptr || !m_Eeg->IsStarted() || !m_Eeg->IsRecording() || m_Eeg->IsPaused())
-        return;
+	if (m_Eeg == nullptr || !m_Eeg->IsStarted() || !m_Eeg->IsRecording() || m_Eeg->IsPaused())
+		return;
 
+	m_RecordingTimer.stop();
     m_Eeg->StopRecord();
     ui->pb_RecordStart->setEnabled(true);
     ui->pb_RecordStop->setEnabled(false);

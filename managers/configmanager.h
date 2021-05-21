@@ -170,7 +170,7 @@ protected:
 	};
 
 	//! Флаг необходимости использования фильтров
-	bool m_useFilters = false;
+	bool m_useFilters = CONFIG_DEFAULT_VALUE_useFilters;
 
 	//! Список фильтров
 	QList<CFilterInfo> m_filters;

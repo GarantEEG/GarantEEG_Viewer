@@ -11,6 +11,7 @@
 //----------------------------------------------------------------------------------
 #include <QMainWindow>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QCloseEvent>
 
 #include <include/GarantEEG_API_CPP.h>
@@ -150,6 +151,11 @@ private:
 	//! Флаг загрузки данных
 	bool m_loading = true;
 
+	//! Таймер записи
+	QTimer m_RecordingTimer;
+
+	//! Время записи
+	QElapsedTimer m_RecordTime;
 };
 //----------------------------------------------------------------------------------
 #endif // MAINWINDOW_H
